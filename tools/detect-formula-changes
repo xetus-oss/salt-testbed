@@ -1,0 +1,31 @@
+#!/bin/bash
+
+SCRIPT_PATH="$0"
+while [ -h "$SCRIPT_PATH" ]
+do
+  SCRIPT_PATH=`readlink -f "$SCRIPT_PATH"`
+done
+
+EXEC_PATH="`pwd -P`"
+cd `dirname "$SCRIPT_PATH"`
+SCRIPT_DIR="`pwd -P`"
+
+cd ../salt/formulas
+
+for entry in `find . -type d -maxdepth 1 -mindepth 1`
+do
+  if [ -e $entry/.git ]
+  then
+    cd $entry
+    git status | grep -q 'nothing to commit'
+    if (( $? != 0 ))
+    then
+      echo "Changes to commit in salt/formulas/${entry}"
+    fi
+    cd ..
+  else
+    echo "Skipping $entry, not a git project"
+  fi
+done
+
+cd "$EXEC_PATH"

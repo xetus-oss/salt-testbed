@@ -1,0 +1,3 @@
+rsyslog:
+  service:
+    - running

@@ -1,0 +1,64 @@
+#!/bin/bash
+
+#
+# Swap all formulas to a different branch
+#
+SCRIPT_PATH="$0"
+while [ -h "$SCRIPT_PATH" ]
+do
+  SCRIPT_PATH=`readlink -f "$SCRIPT_PATH"`
+done
+
+EXEC_PATH="`pwd -P`"
+cd `dirname "$SCRIPT_PATH"`
+SCRIPT_DIR="`pwd -P`"
+
+function print_usage(){
+  echo "Swap the branches of all available formulas"
+  echo "Usage: ./tools [-d] BRANCH_NAME"
+  echo "-d    delete the branch (local only)"
+}
+
+DELETE=false
+
+while getopts "d" opt; do
+  case $opt in
+    d) DELETE=true
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      print_usage
+      exit 1
+      ;;
+  esac
+done
+
+shift $(($OPTIND - 1))
+
+if [ -z $1 ]
+then
+  echo "Argument required - BRANCH_NAME"
+fi
+
+cd ../salt/formulas
+
+for entry in `cat repos.list | sed '/\#.*/d' | sed '/^\s*$/d'`
+do
+  repo_dir=`echo ${entry#*/} | sed 's/\.git$//'`
+  if [ ! -e $repo_dir ]
+  then
+    echo "!! $repo_dir missing - use update-formulas to download the repository"
+  else
+    cd $repo_dir
+    
+    if [ $DELETE == true ]
+    then
+      echo "Deleting branch $1 in ${repo_dir}"
+      git branch -d "$1"
+    else
+      echo "Checking out branch $1 in ${repo_dir}"
+      git checkout -b "$1"
+    fi
+    cd ..
+  fi
+done
