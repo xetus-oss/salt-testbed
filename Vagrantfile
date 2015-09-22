@@ -48,7 +48,7 @@ $master_setup = <<SCRIPT
 
   # https://github.com/saltstack/salt-bootstrap
   curl -L https://bootstrap.saltstack.com -o install_salt.sh
-  sudo sh install_salt.sh -M -U #{salt_version}
+  sudo sh install_salt.sh -M -U -P #{salt_version}
 
   service salt-master stop
   mv /etc/salt/master /etc/salt/master.orig
@@ -82,10 +82,6 @@ $master_setup = <<SCRIPT
   then
     cp /vagrant/templates/pillar_common.sls /vagrant/salt/pillar/common.sls
   fi
-
-  # Expose a stateful master-specific configuration file
-  echo "# Enter master configuration overrides for $1 below" > /vagrant/config/$1.master.conf
-  ln -s /vagrant/config/$1.master.conf /etc/salt/master.d/$1.master.conf
   
   # Install the salt-minion service if desired and expose a stateful
   # configuration file
@@ -112,7 +108,7 @@ SCRIPT
 $minion_setup = <<SCRIPT
   # https://github.com/saltstack/salt-bootstrap
   curl -L https://bootstrap.saltstack.com -o install_salt.sh
-  sudo sh install_salt.sh -U #{salt_version}
+  sudo sh install_salt.sh -P -U #{salt_version}
 
   sed -i "s/#master:.*/master: 192.168.51.2/g" /etc/salt/minion
   if [ ! -e /vagrant/config/$1/ ]
