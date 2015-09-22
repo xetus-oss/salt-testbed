@@ -15,7 +15,7 @@ masters_are_minions = false
 # see the salt-bootstrap README for details:
 # https://github.com/saltstack/salt-bootstrap
 #
-salt_version = "git v2015.5.0"
+salt_version = "git v2015.8.0"
 
 yaml_config_file = File.dirname(__FILE__) + "/testbed.yml"
 yaml_config = nil

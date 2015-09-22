@@ -12,6 +12,12 @@ num_systems = 2
 name_prefix = Socket.gethostbyname(Socket.gethostname).first
 bridge_interface = nil
 
+#
+# see the salt-bootstrap README for details:
+# https://github.com/saltstack/salt-bootstrap
+#
+salt_version = "git v2015.8.0"
+
 yaml_config_file = File.dirname(__FILE__) + "/testbed.yml"
 yaml_config = nil
 if File.file?(yaml_config_file)
@@ -25,6 +31,7 @@ if yaml_config
   num_systems = yaml_config.has_key?("minion_count") ? yaml_config["minion_count"] : num_systems
   name_prefix = yaml_config.has_key?("minion_name_prefix") ? yaml_config["minion_name_prefix"] : name_prefix
   bridge_interface = yaml_config.has_key?("bridge_interface") ? yaml_config["bridge_interface"] : bridge_interface
+  salt_version = yaml_config.has_key?('salt_version') ? yaml_config['salt_version'] : salt_version
 end
 
 master_ip = ENV['MASTER_IP'] ? ENV['MASTER_IP'] : master_ip
@@ -32,6 +39,7 @@ mem_per_system = ENV['MINION_MEM'] ? ENV['MINION_MEM'] : mem_per_system
 num_systems = ENV['MINION_COUNT'] ? ENV['MINION_COUNT'] : num_systems
 name_prefix = ENV['MINION_NAME_PREFIX'] ? ENV['MINION_NAME_PREFIX'] : name_prefix
 bridge_interface = ENV['BRIDGE_INTERFACE'] ? ENV['BRIDGE_INTERFACE'] : bridge_interface
+salt_version = ENV['SALT_VERSION'] ? ENV['SALT_VERSION'] : salt_version
 
 up_included=false
 ARGV.each do|a|
@@ -48,9 +56,10 @@ end
 
 
 $minion_setup = <<SCRIPT
-  add-apt-repository -y ppa:saltstack/salt
-  apt-get update
-  apt-get install -y salt-minion=2015.5.0+ds-1trusty1
+  # https://github.com/saltstack/salt-bootstrap
+  curl -L https://bootstrap.saltstack.com -o install_salt.sh
+  sudo sh install_salt.sh -M -U #{salt_version}
+
   sed -i "s/#master:.*/master: MASTER_IP_ADDR/g" /etc/salt/minion
   service salt-minion restart
 SCRIPT
