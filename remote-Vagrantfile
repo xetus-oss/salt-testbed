@@ -58,7 +58,7 @@ end
 $minion_setup = <<SCRIPT
   # https://github.com/saltstack/salt-bootstrap
   curl -L https://bootstrap.saltstack.com -o install_salt.sh
-  sudo sh install_salt.sh -M -U #{salt_version}
+  sudo sh install_salt.sh -M -U -P #{salt_version}
 
   sed -i "s/#master:.*/master: MASTER_IP_ADDR/g" /etc/salt/minion
   service salt-minion restart
