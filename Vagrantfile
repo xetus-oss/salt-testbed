@@ -10,6 +10,7 @@ use_bridged_testbed = false
 bridge_interface = nil
 multi_master = false
 masters_are_minions = false
+forward_master_ports = false
 
 #
 # see the salt-bootstrap README for details:
@@ -30,6 +31,7 @@ if yaml_config
   multi_master = yaml_config.has_key?('multi_master') ? yaml_config['multi_master'] : multi_master
   masters_are_minions = yaml_config.has_key?('masters_are_minions') ? yaml_config['masters_are_minions'] : masters_are_minions
   salt_version = yaml_config.has_key?('salt_version') ? yaml_config['salt_version'] : salt_version
+  forward_master_ports = yaml_config.has_key?('forward_master_ports') ? yaml_config['forward_master_ports'] : forward_master_ports
 end
 
 
@@ -39,6 +41,7 @@ bridge_interface = ENV['BRIDGE_INTERFACE'] ? ENV['BRIDGE_INTERFACE'] : bridge_in
 multi_master = ENV['MULTI_MASTER'] ? true : multi_master
 masters_are_minions = ENV['MASTERS_ARE_MINIONS'] ? true : masters_are_minions
 salt_version = ENV['SALT_VERSION'] ? ENV['SALT_VERSION'] : salt_version
+forward_master_ports = ENV['FORWARD_MASTER_PORTS'] ? ENV['FORWARD_MASTER_PORTS'] : forward_master_ports
 
 if use_bridged_testbed and ARGV[0] == "up"
   puts "!! Using a bridged testbed since BRIDGE_TESTBED is set. IPs for the minions will be retrieved by DHCP"
@@ -146,6 +149,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       master.vm.network "public_network", bridge: bridge_interface
     end
     master.vm.network "private_network", ip: "192.168.51.2"
+    if forward_master_ports
+      master.vm.network "forwarded_port", guest: 4505, host: 4505
+      master.vm.network "forwarded_port", guest: 4506, host: 4506
+    end
   end
   
   config.vm.define "bigminion", autostart: false do |bigminion|
