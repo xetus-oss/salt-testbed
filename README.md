@@ -1,6 +1,6 @@
 # Overview
 
-A [Vagrant](https://www.vagrantup.com) based testbed for developing with [SaltStack](http://saltstack.com). Useful when formulas, modules, or other code requires multiple systems and services.
+A [Vagrant](https://www.vagrantup.com) based testbed for developing with [SaltStack](http://saltstack.com). The goal is to be the easiest to use testbed out there. Useful when formulas, modules, or other code requires multiple systems and services.
 
 The testbed is made up of the following components:
 
@@ -40,6 +40,8 @@ All systems are Ubuntu 14.04 systems, and are connected to each other through a 
 
 * `tools`: Included here are the various tools to make working with re-usable salt formulas a little easier. It's primarily focused around using git to work with formulas stored in their own project.
 
+* `salt-src` **(optional)**: If using the `salt_development` feature, then checkout the salt source to this directory. See [Salt Development Mode](docs/salt-development-mode.md) for more information.
+
 # Documentation
 
 1. [Common Tasks](docs/common-tasks.md)
@@ -47,3 +49,4 @@ All systems are Ubuntu 14.04 systems, and are connected to each other through a 
 3. [FAQs](docs/faqs.md)
 4. [Optional VM Configuration](docs/vm-configuration.md) 
 5. [Remote Vagrant Minions](docs/remote-testbed-minions.md)
+6. [Salt Development Mode](docs/salt-development-mode.md)

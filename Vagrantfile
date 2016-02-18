@@ -11,12 +11,13 @@ bridge_interface = nil
 multi_master = false
 masters_are_minions = false
 forward_master_ports = false
+salt_development = false
 
 #
 # see the salt-bootstrap README for details:
 # https://github.com/saltstack/salt-bootstrap
 #
-salt_version = "git v2015.8.0"
+salt_version = "git v2015.8.5"
 
 yaml_config_file = File.dirname(__FILE__) + "/testbed.yml"
 yaml_config = nil
@@ -32,6 +33,7 @@ if yaml_config
   masters_are_minions = yaml_config.has_key?('masters_are_minions') ? yaml_config['masters_are_minions'] : masters_are_minions
   salt_version = yaml_config.has_key?('salt_version') ? yaml_config['salt_version'] : salt_version
   forward_master_ports = yaml_config.has_key?('forward_master_ports') ? yaml_config['forward_master_ports'] : forward_master_ports
+  salt_development = yaml_config.has_key?('salt_development') ? yaml_config['salt_development'] : salt_development
 end
 
 
@@ -42,6 +44,8 @@ multi_master = ENV['MULTI_MASTER'] ? true : multi_master
 masters_are_minions = ENV['MASTERS_ARE_MINIONS'] ? true : masters_are_minions
 salt_version = ENV['SALT_VERSION'] ? ENV['SALT_VERSION'] : salt_version
 forward_master_ports = ENV['FORWARD_MASTER_PORTS'] ? ENV['FORWARD_MASTER_PORTS'] : forward_master_ports
+salt_development = ENV['SALT_DEVELOPMENT'] ? ENV['SALT_DEVELOPMENT'] : salt_development
+
 
 if use_bridged_testbed and ARGV[0] == "up"
   puts "!! Using a bridged testbed since BRIDGE_TESTBED is set. IPs for the minions will be retrieved by DHCP"
@@ -50,19 +54,31 @@ end
 $master_setup = <<SCRIPT
 
   # https://github.com/saltstack/salt-bootstrap
-  curl -L https://bootstrap.saltstack.com -o install_salt.sh
-  sudo sh install_salt.sh -M -U -P #{salt_version}
+  if [ "#{salt_development}" == "false" ]
+  then
+    curl -L https://bootstrap.saltstack.com -o install_salt.sh
+    sudo sh install_salt.sh -M -U -P #{salt_version}
 
-  service salt-master stop
-  mv /etc/salt/master /etc/salt/master.orig
-  
+    service salt-master stop
+    mv /etc/salt/master /etc/salt/master.orig
+  else
+    apt-get update
+    apt-get install -y python-virtualenv libzmq3-dev libzmqpp-dev python-m2crypto libpython-dev python-distutils-extra python-apt
+    virtualenv --system-site-packages  /virtenv
+    source /virtenv/bin/activate
+    pip install pyzmq PyYAML pycrypto msgpack-python jinja2 psutil
+    pip install /vagrant/salt-src/
+    mkdir -p /virtenv/etc/salt/
+    ln -s /vagrant/config/salt-master-config /virtenv/etc/salt/master
+  fi
+    
   # Allow the master config to be preserved between vm re-creations
   if [ ! -e  /vagrant/config/salt-master-config ]
   then
     mkdir -p /vagrant/config/
     cp /vagrant/templates/salt-master-config /vagrant/config/salt-master-config
   fi
-  ln -s /vagrant/config/salt-master-config /etc/salt/master
+  # ln -s /vagrant/config/salt-master-config /etc/salt/master
   
   # Copy the template files if they do not already exist
   if [ ! -e /vagrant/salt/states/top.sls ]
@@ -88,42 +104,63 @@ $master_setup = <<SCRIPT
   
   # Install the salt-minion service if desired and expose a stateful
   # configuration file
-  if [[ #{masters_are_minions ? "true" : "false"} -eq "true" ]]; then
-    sed -i "s/#master:.*/master: localhost/g" /etc/salt/minion
-    [[ ! -e /vagrant/config/$1.minion.conf ]] && \
+  if [ "#{salt_development}" == "false" ]
+  then
+    if [[ #{masters_are_minions ? "true" : "false"} -eq "true" ]]; then
+      sed -i "s/#master:.*/master: localhost/g" /etc/salt/minion
+      [[ ! -e /vagrant/config/$1.minion.conf ]] && \
       echo "# Enter minion configuration overrides for $1 below" > /vagrant/config/$1.minion.conf
-    ln -s /vagrant/config/$1.minion.conf /etc/salt/minion.d/$1.minion.conf
-    service salt-minion restart
+        ln -s /vagrant/config/$1.minion.conf /etc/salt/minion.d/$1.minion.conf
+       service salt-minion restart
+    fi
+    service salt-master start
+  else
+    source /virtenv/bin/activate
+    salt-master -c /virtenv/etc/salt -d
   fi
-
-  [ ! -e /vagrant/salt/states/top.sls ] &&\
-    cp /vagrant/templates/state_tops.sls /vagrant/salt/states/top.sls
-  [ ! -e /vagrant/salt/pillar/defaults.sls ] &&\
-    cp /vagrant/templates/pillar_defaults.sls /vagrant/salt/pillar/defaults.sls
-  [ ! -e /vagrant/salt/pillar/common.sls ] &&\
-    cp /vagrant/templates/pillar_common.sls /vagrant/salt/pillar/common.sls
-  [ ! -e /vagrant/salt/pillar/top.sls ] &&\
-    cp /vagrant/templates/pillar_top.sls /vagrant/salt/pillar/top.sls
-  
-  service salt-master start
 SCRIPT
 
 $minion_setup = <<SCRIPT
   # https://github.com/saltstack/salt-bootstrap
-  curl -L https://bootstrap.saltstack.com -o install_salt.sh
-  sudo sh install_salt.sh -P -U #{salt_version}
+  if [ "#{salt_development}" == "false" ]
+  then
+    curl -L https://bootstrap.saltstack.com -o install_salt.sh
+    sudo sh install_salt.sh -M -U -P #{salt_version}
 
-  sed -i "s/#master:.*/master: 192.168.51.2/g" /etc/salt/minion
+    service salt-master stop
+    mv /etc/salt/master /etc/salt/master.orig
+  else
+    apt-get update
+    apt-get install -y python-virtualenv libzmq3-dev libzmqpp-dev python-m2crypto libpython-dev python-distutils-extra python-apt
+    virtualenv --system-site-packages  /virtenv
+    source /virtenv/bin/activate
+    pip install pyzmq PyYAML pycrypto msgpack-python jinja2 psutil
+    
+    if [ "$1" == "minion1" ]
+    then
+      pip install -e /vagrant/salt-src/
+    else
+      pip install /vagrant/salt-src/
+    fi
+
+    mkdir -p /virtenv/etc/salt/
+    ln -s /vagrant/config/$1.conf /virtenv/etc/salt/minion
+    echo "$1" > /virtenv/etc/salt/minion_id
+  fi
+
+  
+  sed -i "s/#master:.*/master: 192.168.51.2/g" /vagrant/config/$1.conf
   if [ ! -e /vagrant/config/$1/ ]
   then
     mkdir -p /vagrant/config
   fi
-
-  # Expose a stateful configuration file
-  [[ ! -e /vagrant/config/$1.conf ]] && \
-    echo "# Enter minion configuration overrides for $1 below" > /vagrant/config/$1.conf
-  ln -s /vagrant/config/$1.conf /etc/salt/minion.d/$1.conf
-  service salt-minion restart
+  
+  if [ "#{salt_development}" == "false" ]
+  then
+    service salt-minion restart
+  else
+    salt-minion -c /virtenv/etc/salt -d
+  fi
 SCRIPT
 
 $hostname_setup = <<SCRIPT
