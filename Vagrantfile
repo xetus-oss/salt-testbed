@@ -53,6 +53,16 @@ end
 
 $master_setup = <<SCRIPT
 
+  # Speed up the apt actions
+  sed -i 's/archive.ubuntu.com/mirrors.us.kernel.org/g' /etc/apt/sources.list
+  
+  # Allow the master config to be preserved between vm re-creations
+  if [ ! -e  /vagrant/config/salt-master-config ]
+  then
+    mkdir -p /vagrant/config/
+    cp /vagrant/templates/salt-master-config /vagrant/config/salt-master-config
+  fi
+  
   # https://github.com/saltstack/salt-bootstrap
   if [ "#{salt_development}" == "false" ]
   then
@@ -61,6 +71,7 @@ $master_setup = <<SCRIPT
 
     service salt-master stop
     mv /etc/salt/master /etc/salt/master.orig
+    ln -s /vagrant/config/salt-master-config /etc/salt/master
   else
     apt-get update
     apt-get install -y python-virtualenv libzmq3-dev libzmqpp-dev python-m2crypto libpython-dev python-distutils-extra python-apt
@@ -71,14 +82,6 @@ $master_setup = <<SCRIPT
     mkdir -p /virtenv/etc/salt/
     ln -s /vagrant/config/salt-master-config /virtenv/etc/salt/master
   fi
-    
-  # Allow the master config to be preserved between vm re-creations
-  if [ ! -e  /vagrant/config/salt-master-config ]
-  then
-    mkdir -p /vagrant/config/
-    cp /vagrant/templates/salt-master-config /vagrant/config/salt-master-config
-  fi
-  # ln -s /vagrant/config/salt-master-config /etc/salt/master
   
   # Copy the template files if they do not already exist
   if [ ! -e /vagrant/salt/states/top.sls ]
@@ -121,14 +124,26 @@ $master_setup = <<SCRIPT
 SCRIPT
 
 $minion_setup = <<SCRIPT
+  
+  # Speed up apt operations
+  sed -i 's/archive.ubuntu.com/mirrors.us.kernel.org/g' /etc/apt/sources.list
+  
+  # Create an empty config for the minion if one does not already exist
+  if [ ! -e /vagrant/config/$1.conf ]
+  then
+    cp /vagrant/templates/minion-config /vagrant/config/$1.conf
+  fi
+
   # https://github.com/saltstack/salt-bootstrap
   if [ "#{salt_development}" == "false" ]
   then
     curl -L https://bootstrap.saltstack.com -o install_salt.sh
     sudo sh install_salt.sh -M -U -P #{salt_version}
 
-    service salt-master stop
-    mv /etc/salt/master /etc/salt/master.orig
+    service salt-minion stop
+    mv /etc/salt/minion /etc/salt/minion.orig
+    sed -i 's/master:.*/master: 192.168.51.2/g' "/vagrant/config/$1.conf"
+    ln -s /vagrant/config/$1.conf /etc/salt/minion
   else
     apt-get update
     apt-get install -y python-virtualenv libzmq3-dev libzmqpp-dev python-m2crypto libpython-dev python-distutils-extra python-apt
@@ -145,14 +160,14 @@ $minion_setup = <<SCRIPT
 
     mkdir -p /virtenv/etc/salt/
     ln -s /vagrant/config/$1.conf /virtenv/etc/salt/minion
+    sed -i 's/master:.*/master: 192.168.51.2/g' "/vagrant/config/$1.conf"
     echo "$1" > /virtenv/etc/salt/minion_id
   fi
 
   
-  sed -i "s/#master:.*/master: 192.168.51.2/g" /vagrant/config/$1.conf
-  if [ ! -e /vagrant/config/$1/ ]
+  if [ ! -e "/vagrant/config/$1" ]
   then
-    mkdir -p /vagrant/config
+    mkdir -p /vagrant/config/$1
   fi
   
   if [ "#{salt_development}" == "false" ]
