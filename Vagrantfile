@@ -17,7 +17,7 @@ salt_development = false
 # see the salt-bootstrap README for details:
 # https://github.com/saltstack/salt-bootstrap
 #
-salt_version = "git v2015.8.5"
+salt_version = "git v2016.11.3"
 
 yaml_config_file = File.dirname(__FILE__) + "/testbed.yml"
 yaml_config = nil
