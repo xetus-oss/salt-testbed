@@ -22,3 +22,9 @@ salt/formulas/myservice-formula/
   README.md
   pillar.example
 ```
+
+
+## Working with multiple git repositories
+
+If you're like us, and have lots of formulas (30+), managing them can be pretty difficult. We recommend using [gr](https://github.com/mixu/gr) for your formula management.
+

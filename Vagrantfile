@@ -4,12 +4,12 @@ require 'yaml'
 
 class ConfigParam
   def initialize(config_var_name, env_var_name, default_val)
-    @name   = config_var_name
+    @config_var_param   = config_var_name
     @env_var_name = env_var_name
     @default  = default_val
   end
-  def name
-    @name
+  def config_var_param
+    @config_var_param
   end
   def env_var_name
     @env_var_name
@@ -36,22 +36,26 @@ config_params << ConfigParam.new("forward_master_ports", "FORWARD_MASTER_PORTS",
 config_params << ConfigParam.new("multi_master", "MULTI_MASTER", false)
 config_params << ConfigParam.new("masters_are_minions", "MASTERS_ARE_MINIONS", false)
 
-
-yaml_config_file = File.dirname(__FILE__) + "/testbed.yml"
+# TODO: Make it ok if this file is empty
+yaml_config_file = "#{File.dirname(__FILE__)}/testbed.yml"
 yaml_config = {}
 
 if File.file?(yaml_config_file)
   yaml_config = YAML.load_file(yaml_config_file)
+  if not yaml_config
+    yaml_config = {}
+    puts "Unable to ready any values from #{yaml_config_file}, it will be ignored"
+  end
 end
 
 testbed_config =  {}
 config_params.each { |cp|
   if ENV[cp.env_var_name]
-    testbed_config[cp.name] = ENV[cp.env_var_name]
-  elsif yaml_config.key?(cp.name)
-    testbed_config[cp.name] = yaml_config[cp.name]
+    testbed_config[cp.config_var_param] = ENV[cp.env_var_name]
+  elsif yaml_config.key?(cp.config_var_param)
+    testbed_config[cp.config_var_param] = yaml_config[cp.config_var_param]
   else
-    testbed_config[cp.name] = cp.default
+    testbed_config[cp.config_var_param] = cp.default
   end
 }
 

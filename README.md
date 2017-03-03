@@ -6,7 +6,6 @@ The testbed is made up of the following components:
 
 * Vagrant scripts which manage the creation/association of a salt master VM and one or more minions.
 * A default salt configuration and layout which should be suitable for most Ubuntu-based environments
-* A simple set of tools for working with salt formulas stored in separate git repositories
 
 # Quickstart
 
@@ -97,8 +96,6 @@ The VM's defined in by the Vagrant file can be configured in a variety of ways u
 * `templates/`: This directory contains templates for initializing new salt testbed setups. The files are copied into their respective directories when `vagrant up` is ran and a new environment is detected.
 
 * `salt`: This is the base directory for the salt environment, you can think of it as `/srv/` in a production environment. The salt directory is divided into several sub-directories to keep things organized as the environment increases in complexity.
-
-* `tools`: Included here are the various tools to make working with re-usable salt formulas a little easier. It's primarily focused around using git to work with formulas stored in their own project.
 
 * `salt-src` **(optional)**: If using the `salt_development` feature, then place the salt source in this directory. See [Salt Development Mode](docs/salt-development-mode.md) for more information.
 
