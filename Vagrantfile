@@ -2,181 +2,62 @@
 # vi: set ft=ruby :
 require 'yaml'
 
-#
-# Configure the various parameters available to customize your testbed
-#
-mem_per_system = 2048
-use_bridged_testbed = false
-bridge_interface = nil
-multi_master = false
-masters_are_minions = false
-forward_master_ports = false
-salt_development = false
+class ConfigParam
+  def initialize(config_var_name, env_var_name, default_val)
+    @name   = config_var_name
+    @env_var_name = env_var_name
+    @default  = default_val
+  end
+  def name
+    @name
+  end
+  def env_var_name
+    @env_var_name
+  end
+  def default
+    @default
+  end
+end
 
 #
-# see the salt-bootstrap README for details:
-# https://github.com/saltstack/salt-bootstrap
+# Define the various configuration parameters and their defaults
 #
-salt_version = "git v2016.11.3"
+config_params = []
+config_params << ConfigParam.new("salt_version", "SALT_VERSION", "git v2016.11.2")
+config_params << ConfigParam.new("salt_development", "SALT_DEVELOPMENT", false)
+config_params << ConfigParam.new("minion_mem", "MINION_MEM", 2048)
+config_params << ConfigParam.new("master_mem", "MASTER_MEM", 512)
+config_params << ConfigParam.new("bigminion_mem", "BIGMINION_MEM", 4096)
+config_params << ConfigParam.new("use_master_ip", "USE_MASTER_IP", "192.168.51.2")
+config_params << ConfigParam.new("use_bridged_network", "USE_BRIDGED_NETWORK", false)
+config_params << ConfigParam.new("bridge_interface", "BRIDGE_INTERFACE", nil)
+config_params << ConfigParam.new("vm_name_prefix", "VM_NAME_PREFIX", nil)
+config_params << ConfigParam.new("forward_master_ports", "FORWARD_MASTER_PORTS", false)
+config_params << ConfigParam.new("multi_master", "MULTI_MASTER", false)
+config_params << ConfigParam.new("masters_are_minions", "MASTERS_ARE_MINIONS", false)
+
 
 yaml_config_file = File.dirname(__FILE__) + "/testbed.yml"
-yaml_config = nil
+yaml_config = {}
+
 if File.file?(yaml_config_file)
   yaml_config = YAML.load_file(yaml_config_file)
 end
 
-if yaml_config
-  bridge_interface = yaml_config.has_key?('bridge_interface') ? yaml_config['bridge_interface'] : bridge_interface
-  mem_per_system = yaml_config.has_key?('minion_mem') ? yaml_config['minion_mem'] : mem_per_system
-  use_bridged_testbed = yaml_config.has_key?('use_bridged_testbed') ? yaml_config['use_bridged_testbed'] : use_bridged_testbed
-  multi_master = yaml_config.has_key?('multi_master') ? yaml_config['multi_master'] : multi_master
-  masters_are_minions = yaml_config.has_key?('masters_are_minions') ? yaml_config['masters_are_minions'] : masters_are_minions
-  salt_version = yaml_config.has_key?('salt_version') ? yaml_config['salt_version'] : salt_version
-  forward_master_ports = yaml_config.has_key?('forward_master_ports') ? yaml_config['forward_master_ports'] : forward_master_ports
-  salt_development = yaml_config.has_key?('salt_development') ? yaml_config['salt_development'] : salt_development
+testbed_config =  {}
+config_params.each { |cp|
+  if ENV[cp.env_var_name]
+    testbed_config[cp.name] = ENV[cp.env_var_name]
+  elsif yaml_config.key?(cp.name)
+    testbed_config[cp.name] = yaml_config[cp.name]
+  else
+    testbed_config[cp.name] = cp.default
+  end
+}
+
+if testbed_config['use_bridged_testbed'] and ARGV[0] == "up"
+  puts "!! Using a bridged testbed since BRIDGE_TESTBED is set. Minions will be exposed on your local network"
 end
-
-
-mem_per_system = ENV['MINION_MEM'] ? ENV['MINION_MEM'] : mem_per_system
-use_bridged_testbed = ENV['BRIDGE_TESTBED'] ? true : use_bridged_testbed
-bridge_interface = ENV['BRIDGE_INTERFACE'] ? ENV['BRIDGE_INTERFACE'] : bridge_interface
-multi_master = ENV['MULTI_MASTER'] ? true : multi_master
-masters_are_minions = ENV['MASTERS_ARE_MINIONS'] ? true : masters_are_minions
-salt_version = ENV['SALT_VERSION'] ? ENV['SALT_VERSION'] : salt_version
-forward_master_ports = ENV['FORWARD_MASTER_PORTS'] ? ENV['FORWARD_MASTER_PORTS'] : forward_master_ports
-salt_development = ENV['SALT_DEVELOPMENT'] ? ENV['SALT_DEVELOPMENT'] : salt_development
-
-
-if use_bridged_testbed and ARGV[0] == "up"
-  puts "!! Using a bridged testbed since BRIDGE_TESTBED is set. IPs for the minions will be retrieved by DHCP"
-end
-
-$master_setup = <<SCRIPT
-
-  # Speed up the apt actions
-  sed -i 's/archive.ubuntu.com/mirrors.us.kernel.org/g' /etc/apt/sources.list
-  
-  # Allow the master config to be preserved between vm re-creations
-  if [ ! -e  /vagrant/config/salt-master-config ]
-  then
-    mkdir -p /vagrant/config/
-    cp /vagrant/templates/salt-master-config /vagrant/config/salt-master-config
-  fi
-  
-  # https://github.com/saltstack/salt-bootstrap
-  if [ "#{salt_development}" == "false" ]
-  then
-    curl -L https://bootstrap.saltstack.com -o install_salt.sh
-    sudo sh install_salt.sh -M -U -P #{salt_version}
-
-    service salt-master stop
-    mv /etc/salt/master /etc/salt/master.orig
-    ln -s /vagrant/config/salt-master-config /etc/salt/master
-  else
-    apt-get update
-    apt-get install -y python-virtualenv libzmq3-dev libzmqpp-dev python-m2crypto libpython-dev python-distutils-extra python-apt
-    virtualenv --system-site-packages  /virtenv
-    source /virtenv/bin/activate
-    pip install pyzmq PyYAML pycrypto msgpack-python jinja2 psutil
-    pip install /vagrant/salt-src/
-    mkdir -p /virtenv/etc/salt/
-    ln -s /vagrant/config/salt-master-config /virtenv/etc/salt/master
-  fi
-  
-  # Copy the template files if they do not already exist
-  if [ ! -e /vagrant/salt/states/top.sls ]
-  then
-    cp /vagrant/templates/state_top.sls /vagrant/salt/states/top.sls
-  fi
-  if [ ! -e /vagrant/salt/states/example-rsyslog.sls ]
-  then
-    cp /vagrant/templates/state_example-rsyslog.sls /vagrant/salt/states/example-rsyslog.sls
-  fi
-  if [ ! -e /vagrant/salt/pillar/top.sls ]
-  then
-    cp /vagrant/templates/pillar_top.sls /vagrant/salt/pillar/top.sls
-  fi
-  if [ ! -e /vagrant/salt/pillar/defaults.sls ]
-  then
-    cp /vagrant/templates/pillar_defaults.sls /vagrant/salt/pillar/defaults.sls
-  fi
-  if [ ! -e /vagrant/salt/pillar/common.sls ]
-  then
-    cp /vagrant/templates/pillar_common.sls /vagrant/salt/pillar/common.sls
-  fi
-  
-  # Install the salt-minion service if desired and expose a stateful
-  # configuration file
-  if [ "#{salt_development}" == "false" ]
-  then
-    if [[ #{masters_are_minions ? "true" : "false"} -eq "true" ]]; then
-      sed -i "s/#master:.*/master: localhost/g" /etc/salt/minion
-      [[ ! -e /vagrant/config/$1.minion.conf ]] && \
-      echo "# Enter minion configuration overrides for $1 below" > /vagrant/config/$1.minion.conf
-        ln -s /vagrant/config/$1.minion.conf /etc/salt/minion.d/$1.minion.conf
-       service salt-minion restart
-    fi
-    service salt-master start
-  else
-    source /virtenv/bin/activate
-    salt-master -c /virtenv/etc/salt -d
-  fi
-SCRIPT
-
-$minion_setup = <<SCRIPT
-  
-  # Speed up apt operations
-  sed -i 's/archive.ubuntu.com/mirrors.us.kernel.org/g' /etc/apt/sources.list
-  
-  # Create an empty config for the minion if one does not already exist
-  if [ ! -e /vagrant/config/$1.conf ]
-  then
-    cp /vagrant/templates/minion-config /vagrant/config/$1.conf
-  fi
-
-  # https://github.com/saltstack/salt-bootstrap
-  if [ "#{salt_development}" == "false" ]
-  then
-    curl -L https://bootstrap.saltstack.com -o install_salt.sh
-    sudo sh install_salt.sh -M -U -P #{salt_version}
-
-    service salt-minion stop
-    mv /etc/salt/minion /etc/salt/minion.orig
-    sed -i 's/master:.*/master: 192.168.51.2/g' "/vagrant/config/$1.conf"
-    ln -s /vagrant/config/$1.conf /etc/salt/minion
-  else
-    apt-get update
-    apt-get install -y python-virtualenv libzmq3-dev libzmqpp-dev python-m2crypto libpython-dev python-distutils-extra python-apt
-    virtualenv --system-site-packages  /virtenv
-    source /virtenv/bin/activate
-    pip install pyzmq PyYAML pycrypto msgpack-python jinja2 psutil
-    
-    if [ "$1" == "minion1" ]
-    then
-      pip install -e /vagrant/salt-src/
-    else
-      pip install /vagrant/salt-src/
-    fi
-
-    mkdir -p /virtenv/etc/salt/
-    ln -s /vagrant/config/$1.conf /virtenv/etc/salt/minion
-    sed -i 's/master:.*/master: 192.168.51.2/g' "/vagrant/config/$1.conf"
-    echo "$1" > /virtenv/etc/salt/minion_id
-  fi
-
-  
-  if [ ! -e "/vagrant/config/$1" ]
-  then
-    mkdir -p /vagrant/config/$1
-  fi
-  
-  if [ "#{salt_development}" == "false" ]
-  then
-    service salt-minion restart
-  else
-    salt-minion -c /virtenv/etc/salt -d
-  fi
-SCRIPT
 
 $hostname_setup = <<SCRIPT
   echo "$1" > /etc/hostname
@@ -186,75 +67,113 @@ SCRIPT
 
 VAGRANTFILE_API_VERSION = "2"
 
-Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-
-  config.vm.define "master" do |master|
-    master.vm.box = "ubuntu/trusty64"
-    master.vm.provider "virtualbox" do |v|
-      v.memory = 512
-      v.cpus = 2
-    end
-    
-    master.vm.provision "shell", inline: $hostname_setup, args: "master"
-    master.vm.provision "shell", inline: $master_setup, args: "master"
-    if use_bridged_testbed
-      master.vm.network "public_network", bridge: bridge_interface
-    end
-    master.vm.network "private_network", ip: "192.168.51.2"
-    if forward_master_ports
-      master.vm.network "forwarded_port", guest: 4505, host: 4505
-      master.vm.network "forwarded_port", guest: 4506, host: 4506
-    end
-  end
-  
-  config.vm.define "bigminion", autostart: false do |bigminion|
-    bigminion.vm.box = "ubuntu/trusty64"
-    bigminion.vm.provider "virtualbox" do |v|
-      v.memory = 4096
-      v.cpus = 2
-    end
-
-    bigminion.vm.provision "shell", inline: $hostname_setup, args: "bigminion"
-    bigminion.vm.provision "shell", inline: $minion_setup, args: "bigminion"
-    if use_bridged_testbed
-      bigminion.vm.network "public_network", bridge: bridge_interface
-    end
-    bigminion.vm.network "private_network", ip: "192.168.51.3"
+class VMDefFactory
+  def initialize(vagrant_config:, salt_version:, salt_development:, use_bridged_network:, bridge_interface: nil, vm_name_prefix: nil)
+    @vagrant_config = vagrant_config
+    @salt_version = salt_version
+    @salt_development = salt_development
+    @bridged_testbed = use_bridged_network
+    @bridge_interface = bridge_interface
+    @vm_name_prefix = vm_name_prefix
   end
 
-  (1..5).each do |i|
-    auto_start_minion = (i == 1)
-    config.vm.define "minion#{i}", autostart: auto_start_minion do |minion|
+  def createMaster(master_name:, memory:, private_network_ip:, forward_salt_ports: false, is_minion: false)
+    config = @vagrant_config
+    if @vm_name_prefix
+      master_name = "#{@vm_name_prefix}_#{master_name}"
+    end
+
+    config.vm.define master_name do |master|
+      master.vm.box = "ubuntu/trusty64"
+      master.vm.provider "virtualbox" do |v|
+        v.memory = memory
+        v.cpus = 2
+
+      end
+
+      master.vm.provision "shell", inline: $hostname_setup, args: master_name
+      master.vm.provision "shell" do |s|
+        s.path = "vagrantscripts/provision_ubuntu1404_master.bash"
+        s.args = [ "#{@salt_development}", master_name, "#{is_minion}", @salt_version ]
+      end
+
+      if @bridged_testbed
+        master.vm.network "public_network", bridge: @bridge_interface
+      end
+      master.vm.network "private_network", ip: private_network_ip
+      if forward_salt_ports
+        master.vm.network "forwarded_port", guest: 4505, host: 4505
+        master.vm.network "forwarded_port", guest: 4506, host: 4506
+      end
+    end
+  end
+
+  def createMinion(minion_name:, master_ip:, auto_start:, memory:, private_network_ip:)
+    config = @vagrant_config
+    if @vm_name_prefix
+      minion_name = "#{@vm_name_prefix}_#{minion_name}"
+    end
+
+    config.vm.define minion_name, autostart: auto_start do |minion|
       minion.vm.box = "ubuntu/trusty64"
       minion.vm.provider "virtualbox" do |v|
         v.customize ["setextradata", :id, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/vagrant", "1"]
-        v.memory = mem_per_system
+        v.memory = memory
         v.cpus = 2
       end
 
-      minion.vm.provision "shell", inline: $hostname_setup, args: "minion#{i}"
-      minion.vm.provision "shell", inline: $minion_setup, args: "minion#{i}"
-      if use_bridged_testbed
-        minion.vm.network "public_network", bridge: bridge_interface
+      minion.vm.provision "shell", inline: $hostname_setup, args: minion_name
+      minion.vm.provision "shell" do |s|
+        s.path = "vagrantscripts/provision_ubuntu1404_minion.bash"
+        s.args = [ "#{@salt_development}", minion_name, master_ip, @salt_version ]
       end
-      minion.vm.network "private_network", ip: "192.168.51.#{3+i}"
+
+      if @bridged_testbed
+       minion.vm.network "public_network", bridge: @bridge_interface
+      end
+      minion.vm.network "private_network", ip: private_network_ip
     end
   end
+end
 
-  if multi_master
-    config.vm.define "master1" do |master|
-      master.vm.box = "ubuntu/trusty64"
-      master.vm.provider "virtualbox" do |v|
-        v.memory = 512
-        v.cpus = 2
-      end
-      
-      master.vm.provision "shell", inline: $hostname_setup, args: "master1"
-      master.vm.provision "shell", inline: $master_setup, args: "master1"
-      if use_bridged_testbed
-        master.vm.network "public_network", bridge: bridge_interface
-      end
-      master.vm.network "private_network", ip: "192.168.51.9"
-    end
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  factory = VMDefFactory.new(vagrant_config: config,
+    salt_version: testbed_config["salt_version"],
+    salt_development: testbed_config["salt_development"],
+    use_bridged_network: testbed_config["use_bridged_network"],
+    bridge_interface: testbed_config["bridge_interface"],
+    vm_name_prefix: testbed_config["vm_name_prefix"])
+
+  # Create the master minion definition
+  factory.createMaster(master_name: "master",
+    memory: testbed_config["master_mem"],
+    private_network_ip: "192.168.51.2",
+    forward_salt_ports: testbed_config["forward_master_ports"],
+    is_minion: testbed_config["masters_are_minions"])
+
+  # Create a second master, if necessary
+  if testbed_config["multi_master"]
+    factory.createMaster(master_name: "master1",
+      memory: testbed_config["master_mem"],
+      private_network_ip: "192.168.51.3",
+      forward_salt_ports: testbed_config["forward_master_ports"],
+      is_minion: testbed_config["masters_are_minions"])
+  end
+
+  # Create the bigminion defintion
+  factory.createMinion(minion_name: "bigminion",
+    master_ip: testbed_config["use_master_ip"],
+    auto_start: false,
+    memory: testbed_config["bigminion_mem"],
+    private_network_ip: "192.168.51.4")
+
+  # Create regular minions 1-5
+  (1..5).each do |i|
+    factory.createMinion(minion_name: "minion#{i}",
+      master_ip: testbed_config["use_master_ip"],
+      auto_start: (i == 1),
+      memory: testbed_config["bigminion_mem"],
+      private_network_ip: "192.168.51.#{4+i}")
   end
 end

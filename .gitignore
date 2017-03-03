@@ -3,3 +3,6 @@
 config/*
 salt/reactor/
 testbed.yml
+salt-src
+salt/win-repo-installers
+salt/formulas/repos.list

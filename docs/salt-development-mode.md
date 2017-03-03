@@ -11,10 +11,8 @@ The vagrant script will setup the salt development environrment according to the
 
 The key points that are different about the testbed setup are:
 
-* Only minion1 has the checked out version of salt installed using pip's "edit mode". A reinstall using `pip install /vagrant/salt-src/`
 * The virtual environment base is `/virtenv`
 * All the configuration files that would normally be used in the salt testbed are used.
-
 
 Once the VMs are created, the quickest way to go make sure the development mode is working is to log into the master and issue the following commands:
 
