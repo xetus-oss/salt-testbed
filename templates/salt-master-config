@@ -1,7 +1,5 @@
 file_roots:
   base:
-     # Needed for a windows minion bug 
-    - /vagrant/salt/proxy-for-bug-15926/
     - /vagrant/salt/states
     # Add formulas here
 
@@ -10,7 +8,3 @@ pillar_roots:
     - /vagrant/salt/pillar
 
 auto_accept: true
-
-win_repo: '/vagrant/salt/proxy-for-bug-15926/win/repo/salt-winrepo'
-
-win_repo_mastercachefile: '/vagrant/salt/proxy-for-bug-15926/win/repo/winrepo.p'
