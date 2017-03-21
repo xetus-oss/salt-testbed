@@ -84,7 +84,7 @@ class VMDefFactory
   def createMaster(master_name:, memory:, private_network_ip:, forward_salt_ports: false, is_minion: false)
     config = @vagrant_config
     if @vm_name_prefix
-      master_name = "#{@vm_name_prefix}_#{master_name}"
+      master_name = "#{@vm_name_prefix}-#{master_name}"
     end
 
     config.vm.define master_name do |master|
@@ -115,7 +115,7 @@ class VMDefFactory
   def createMinion(minion_name:, master_ip:, auto_start:, memory:, private_network_ip:)
     config = @vagrant_config
     if @vm_name_prefix
-      minion_name = "#{@vm_name_prefix}_#{minion_name}"
+      minion_name = "#{@vm_name_prefix}-#{minion_name}"
     end
 
     config.vm.define minion_name, autostart: auto_start do |minion|
