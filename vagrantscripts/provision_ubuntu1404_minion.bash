@@ -14,9 +14,9 @@ echo "SALT_VERSION=${SALT_VERSION}"
 sed -i 's/archive.ubuntu.com/mirrors.us.kernel.org/g' /etc/apt/sources.list
 
 # Create an empty config for the minion if one does not already exist
-if [ ! -e /vagrant/config/${VM_NAME}.conf ]
+if [ ! -e /vagrant/config/${VM_NAME}/minion ]
 then
-  cp /vagrant/templates/minion-config /vagrant/config/${VM_NAME}.conf
+  cp /vagrant/templates/minion.template /vagrant/config/${VM_NAME}/minion
 fi
 
 # https://github.com/saltstack/salt-bootstrap
@@ -26,6 +26,7 @@ then
   sudo sh install_salt.sh -U -P $SALT_VERSION
   mv /etc/salt/minion /etc/salt/minion.orig
   echo "${VM_NAME}" > /etc/salt/minion_id
+  ln -s /vagrant/config/${VM_NAME}/minion /etc/salt/minion
 else
   apt-get update
   apt-get install -y python-virtualenv libzmq3-dev libzmqpp-dev python-m2crypto libpython-dev python-distutils-extra python-apt
@@ -36,11 +37,10 @@ else
   pip install -e /vagrant/salt-src/
   mkdir -p /virtenv/etc/salt/
   echo "${VM_NAME}" > /virtenv/etc/salt/minion_id
+  ln -s /vagrant/config/${VM_NAME}/minion /virtenv/etc/salt/minion
 fi
 
-
-ln -s /vagrant/config/${VM_NAME}.conf /etc/salt/minion
-sed -i "s/master:.*/master: ${MASTER_IP}/g" "/vagrant/config/${VM_NAME}.conf"
+sed -i "s/master:.*/master: ${MASTER_IP}/g" "/vagrant/config/${VM_NAME}/minion"
 
 
 if [ ! -e "/vagrant/config/${VM_NAME}" ]

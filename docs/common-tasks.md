@@ -2,7 +2,7 @@
 
 ## Working on formulas
 
-Place the formula under `salt/formulas`, then add the directory to the `file_roots` directive in `config/salt-master-config`. For example, if adding 'myservice-formula' the config/salt-master-config would contain:
+Place the formula under `salt/formulas`, then add the directory to the `file_roots` directive in `config/master/master`. For example, if adding 'myservice-formula' the config/master/master would contain:
 
 ```
 file_roots:

@@ -14,10 +14,10 @@ echo "SALT_VERSION=${SALT_VERSION}"
 sed -i 's/archive.ubuntu.com/mirrors.us.kernel.org/g' /etc/apt/sources.list
 
 # Allow the master config to be preserved between vm re-creations
-if [ ! -e  /vagrant/config/salt-master-config ]
+if [ ! -e  /vagrant/config/master/master ]
 then
-  mkdir -p /vagrant/config/
-  cp /vagrant/templates/salt-master-config /vagrant/config/salt-master-config
+  mkdir -p /vagrant/config/master
+  cp /vagrant/templates/master.template /vagrant/config/master/master
 fi
 
 # https://github.com/saltstack/salt-bootstrap
@@ -28,7 +28,7 @@ then
 
   service salt-master stop
   mv /etc/salt/master /etc/salt/master.orig
-  ln -s /vagrant/config/salt-master-config /etc/salt/master
+  ln -s /vagrant/config/master/master /etc/salt/master
 else
   apt-get update
   apt-get install -y python-virtualenv libzmq3-dev libzmqpp-dev python-m2crypto libpython-dev python-distutils-extra python-apt
@@ -37,7 +37,7 @@ else
   pip install pyzmq PyYAML pycrypto msgpack-python jinja2 psutil
   pip install /vagrant/salt-src/
   mkdir -p /virtenv/etc/salt/
-  ln -s /vagrant/config/salt-master-config /virtenv/etc/salt/master
+  ln -s /vagrant/config/master/master /virtenv/etc/salt/master
 fi
 
 # Copy the template files if they do not already exist
@@ -74,3 +74,14 @@ else
   source /virtenv/bin/activate
   salt-master -c /virtenv/etc/salt -d
 fi
+
+# salt-cloud configuration files, if present, should be symlinked
+i=0
+cloud_config_dirs[((i++))]="cloud.providers.d"
+cloud_config_dirs[((i++))]="cloud.profiles.d"
+cloud_config_dirs[((i++))]="cloud.keys.d"
+
+for clouddir in "${cloud_config_dirs[@]}"; do
+  mkdir -p /vagrant/config/master/${clouddir}
+  ln -s /vagrant/config/master/${clouddir} /etc/salt/${clouddir}
+done

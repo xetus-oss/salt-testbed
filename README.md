@@ -91,7 +91,7 @@ The VM's defined in by the Vagrant file can be configured in a variety of ways u
 
 # Testbed organization
 
-* `config/`: This directory contains configuration files that are symlinked in the various master/minion VM's. The salt master's `/etc/salt/master` configuration file is symlinked to `config/salt-master-config` and each local minion gets an override config file named `config/<minionid>.minon.conf` which is symlinked to `/etc/salt/minion.d/minon.conf`.
+* `config/`: This directory contains configuration files that are symlinked in the various master/minion VM's. Each vagrant vm has a configuration sub directory of `config/{vagrant_vm_id}` which contains configuration files and directories that will be symlinked to the `/etc/salt` directory.
   
 * `templates/`: This directory contains templates for initializing new salt testbed setups. The files are copied into their respective directories when `vagrant up` is ran and a new environment is detected.
 
