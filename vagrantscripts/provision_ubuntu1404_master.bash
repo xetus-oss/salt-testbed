@@ -37,7 +37,7 @@ else
   source /virtenv/bin/activate
   pip install pyzmq PyYAML pycrypto msgpack-python jinja2 psutil
   pip install /vagrant/salt-src/
-  mkdir -p /virtenv/etc/salt/master.d
+  mkdir -p /virtenv/etc/salt
   cp /vagrant/templates/static_config/master.template /virtenv/etc/salt/master
   sed -i "s/{vmid}/${VM_NAME}/g" "virtenv/etc/salt/master"
   sed -i "s+etc+virtenv/etc+g" "/virtenv/etc/salt/master"
