@@ -65,7 +65,8 @@ fi
 # configuration file
 if [ "${SALT_DEVELOPMENT}" == "false" ]
 then
-  if [[ "$MASTERS_ARE_MINIONS" -eq "true" ]]; then
+  if [ "$MASTERS_ARE_MINIONS" == "true" ] 
+  then
     cp /vagrant/templates/static_config/minion.template /etc/salt/minion
     sed -i "s/{vmid}/${VM_NAME}/g" /etc/salt/minion
     
