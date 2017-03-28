@@ -1,0 +1,6 @@
+# Do not make changes to this file unless you've got a good reason for doing so. This file will not persist across 
+# vagrant rebuilds (A destroy and subsequent vagrant up command)
+# instead put your minion configuration files in /vagrant/config/{vmid}/minion.d/
+
+include:
+  - /vagrant/config/{vmid}/minion.d/*

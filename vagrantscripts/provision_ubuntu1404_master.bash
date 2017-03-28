@@ -14,10 +14,10 @@ echo "SALT_VERSION=${SALT_VERSION}"
 sed -i 's/archive.ubuntu.com/mirrors.us.kernel.org/g' /etc/apt/sources.list
 
 # Allow the master config to be preserved between vm re-creations
-if [ ! -e  /vagrant/config/master/master ]
+if [ ! -e  /vagrant/config/${VM_NAME}/master.d/default.conf ]
 then
-  mkdir -p /vagrant/config/master
-  cp /vagrant/templates/master.template /vagrant/config/master/master
+  mkdir -p /vagrant/config/${VM_NAME}/master.d
+  cp /vagrant/templates/master.default.template /vagrant/config/${VM_NAME}/master.d/default.conf
 fi
 
 # https://github.com/saltstack/salt-bootstrap
@@ -28,7 +28,8 @@ then
 
   service salt-master stop
   mv /etc/salt/master /etc/salt/master.orig
-  ln -s /vagrant/config/master/master /etc/salt/master
+  cp /vagrant/templates/static_config/master.template /etc/salt/master
+  sed -i "s/{vmid}/${VM_NAME}/g" "/etc/salt/master"
 else
   apt-get update
   apt-get install -y python-virtualenv libzmq3-dev libzmqpp-dev python-m2crypto libpython-dev python-distutils-extra python-apt
@@ -36,8 +37,10 @@ else
   source /virtenv/bin/activate
   pip install pyzmq PyYAML pycrypto msgpack-python jinja2 psutil
   pip install /vagrant/salt-src/
-  mkdir -p /virtenv/etc/salt/
-  ln -s /vagrant/config/master/master /virtenv/etc/salt/master
+  mkdir -p /virtenv/etc/salt/master.d
+  cp /vagrant/templates/static_config/master.template /virtenv/etc/salt/master
+  sed -i "s/{vmid}/${VM_NAME}/g" "virtenv/etc/salt/master"
+  sed -i "s+etc+virtenv/etc+g" "/virtenv/etc/salt/master"
 fi
 
 # Copy the template files if they do not already exist
@@ -63,10 +66,17 @@ fi
 if [ "${SALT_DEVELOPMENT}" == "false" ]
 then
   if [[ "$MASTERS_ARE_MINIONS" -eq "true" ]]; then
-    sed -i "s/#master:.\*/master: localhost/g" /etc/salt/minion
-    [[ ! -e /vagrant/config/${VM_NAME}.minion.conf ]] && \
-    echo "# Enter minion configuration overrides for ${VM_NAME} below" > /vagrant/config/${VM_NAME}.minion.conf
-      ln -s /vagrant/config/${VM_NAME}.minion.conf /etc/salt/minion.d/${VM_NAME}.minion.conf
+    cp /vagrant/templates/static_config/minion.template /etc/salt/minion
+    sed -i "s/{vmid}/${VM_NAME}/g" /etc/salt/minion
+    
+    if [[ ! -e /vagrant/config/${VM_NAME}/minion.d/masters.conf ]]; then
+      mkdir -p /vagrant/config/${VM_NAME}/minion.d
+      cp /vagrant/templates/minion.masters.template /vagrant/config/${VM_NAME}/minion.d/masters.conf
+    fi
+
+    sed -i "s/master:.*/master: localhost/g" /vagrant/config/${VM_NAME}/minion.d/masters.conf
+    sed -i "s/{vmid}/${VM_NAME}/g" /vagrant/config/${VM_NAME}/minion.d/masters.conf
+
      service salt-minion restart
   fi
   service salt-master start
@@ -85,3 +95,7 @@ for clouddir in "${cloud_config_dirs[@]}"; do
   mkdir -p /vagrant/config/master/${clouddir}
   ln -s /vagrant/config/master/${clouddir} /etc/salt/${clouddir}
 done
+
+# In case it's necessary to reboot master outside of vagrant
+sudo cp /vagrant/templates/static_config/rc.local.master.template /etc/rc.local
+echo manual >> /etc/init/salt-master.override
