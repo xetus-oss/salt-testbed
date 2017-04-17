@@ -39,7 +39,7 @@ else
   pip install pyzmq PyYAML pycrypto msgpack-python jinja2 psutil
 
   pip install -e /vagrant/salt-src/
-  mkdir -p /virtenv/etc/salt/minion.d
+  mkdir -p /virtenv/etc/salt/
   echo "${VM_NAME}" > /virtenv/etc/salt/minion_id
   cp /vagrant/templates/static_config/minion.template /virtenv/etc/salt/minion
   sed -i "s/{vmid}/${VM_NAME}/g" "/virtenv/etc/salt/minion"
@@ -60,6 +60,9 @@ else
   salt-minion -c /virtenv/etc/salt -d
 fi
 
-# In case it's necessary to reboot minion outside of vagrant
-sudo cp /vagrant/templates/static_config/rc.local.minion.template /etc/rc.local
-echo manual >> /etc/init/salt-minion.override
+if [ "${SALT_DEVELOPMENT}" == "false" ]
+then
+  # In case it's necessary to reboot minion outside of vagrant
+  sudo cp /vagrant/templates/static_config/rc.local.minion.template /etc/rc.local
+  echo manual >> /etc/init/salt-minion.override
+fi
