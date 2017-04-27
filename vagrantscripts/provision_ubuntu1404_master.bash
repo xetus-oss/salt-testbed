@@ -4,6 +4,11 @@ SALT_DEVELOPMENT="$1"
 VM_NAME="$2"
 MASTERS_ARE_MINIONS="$3"
 SALT_VERSION="$4"
+ETC_PATH="/etc"
+if [ "${SALT_DEVELOPMENT}" == "true" ]
+then
+  ETC_PATH="/virtenv/etc"
+fi
 
 echo "SALT_DEVELOPMENT=${SALT_DEVELOPMENT}"
 echo "VM_NAME=${VM_NAME}"
@@ -20,12 +25,6 @@ then
   cp /vagrant/templates/master.default.template /vagrant/config/${VM_NAME}/master.d/default.conf
 fi
 
-ETC_PATH="/etc"
-if [ "${SALT_DEVELOPMENT}" == "true" ]
-then
-  ETC_PATH="/virtenv/etc"
-fi
-
 # https://github.com/saltstack/salt-bootstrap
 if [ "${SALT_DEVELOPMENT}" == "false" ]
 then
@@ -40,11 +39,11 @@ else
   apt-get install -y python-virtualenv libzmq3-dev libzmqpp-dev python-m2crypto libpython-dev python-distutils-extra python-apt
   virtualenv --system-site-packages  /virtenv
   source /virtenv/bin/activate
-  pip install pyzmq PyYAML pycrypto msgpack-python jinja2 psutil
-  pip install /vagrant/salt-src/
+  pip install pyzmq PyYAML pycrypto msgpack-python jinja2 psutil futures tornado
+  GENERATE_SALT_SYSPATHS=1 pip install --global-option='--salt-root-dir=/virtenv/' -e /vagrant/salt-src
   mkdir -p /virtenv/etc/salt
   cp /vagrant/templates/static_config/master.template /virtenv/etc/salt/master
-  sed -i "s+etc+virtenv/etc+g" "/virtenv/etc/salt/master"
+  sed -i "s/{vmid}/${VM_NAME}/g" "/virtenv/etc/salt/master"
 fi
 
 # Set the base roots in the master config
@@ -90,14 +89,14 @@ then
   service salt-master start
   if [ "$MASTERS_ARE_MINIONS" == "true" ]
   then
-    service salt-minion start
+    service salt-minion restart
   fi
 else
   source /virtenv/bin/activate
-  salt-master -c /virtenv/etc/salt -d
+  salt-master -d
   if [ "$MASTERS_ARE_MINIONS" == "true" ]
   then
-    salt-minion -c /virtenv/etc/salt -d
+    salt-minion -d
   fi
 fi
 
@@ -112,9 +111,27 @@ for clouddir in "${cloud_config_dirs[@]}"; do
   ln -s /vagrant/config/master/${clouddir} "${ETC_PATH}/salt/${clouddir}"
 done
 
-if [ "${SALT_DEVELOPMENT}" == "false" ]
+# In case it's necessary to reboot master outside of vagrant
+sudo cp /vagrant/templates/static_config/rc.local.template /etc/rc.local
+
+MASTER_START_COMMAND="service salt-master start"
+MINION_START_COMMAND="service salt-minion start"
+START_COMMANDS=""
+
+if [ "${SALT_DEVELOPMENT}" == "true" ]
 then
-  # In case it's necessary to reboot master outside of vagrant
-  sudo cp /vagrant/templates/static_config/rc.local.master.template /etc/rc.local
   echo manual >> /etc/init/salt-master.override
+  START_COMMANDS="${START_COMMANDS}\nsource /virtenv/bin/activate"
+  MASTER_START_COMMAND="salt-master -d"
+  MINION_START_COMMAND="salt-minion -d"
 fi
+
+START_COMMANDS="${START_COMMANDS}\n\n${MASTER_START_COMMAND}"
+
+if [ "$MASTERS_ARE_MINIONS" == "true" ]
+then
+  echo manual >> /etc/init/salt-minion.override
+  START_COMMANDS="${START_COMMANDS}\n${MINION_START_COMMAND}"
+fi
+
+sed -i "s+# CONFIGURATION BLOCK+${START_COMMANDS}+g" /etc/rc.local

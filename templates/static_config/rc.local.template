@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/bash
 #
 # rc.local
 #
@@ -14,6 +14,6 @@
 # Mount the vagrant virtualbox share in case of reboot outside of vagrant
 mount -t vboxsf vagrant /vagrant/
 
-service salt-minion start
+# CONFIGURATION BLOCK
 
 exit 0

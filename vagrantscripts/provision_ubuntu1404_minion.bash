@@ -4,6 +4,11 @@ SALT_DEVELOPMENT="$1"
 VM_NAME="$2"
 MASTER_IP="$3"
 SALT_VERSION="$4"
+ETC_PATH="/etc"
+if [ "${SALT_DEVELOPMENT}" == "true" ]
+then
+  ETC_PATH="/virtenv/etc"
+fi
 
 echo "SALT_DEVELOPMENT=${SALT_DEVELOPMENT}"
 echo "VM_NAME=${VM_NAME}"
@@ -26,25 +31,24 @@ if [ "${SALT_DEVELOPMENT}" == "false" ]
 then
   curl -L https://bootstrap.saltstack.com -o install_salt.sh
   sudo sh install_salt.sh -U -P $SALT_VERSION
-  mkdir -p /etc/salt/minion.d
-  mv /etc/salt/minion /etc/salt/minion.orig
-  echo "${VM_NAME}" > /etc/salt/minion_id
-  cp /vagrant/templates/static_config/minion.template /etc/salt/minion
-  sed -i "s/{vmid}/${VM_NAME}/g" "/etc/salt/minion"
 else
   apt-get update
   apt-get install -y python-virtualenv libzmq3-dev libzmqpp-dev python-m2crypto libpython-dev python-distutils-extra python-apt
   virtualenv --system-site-packages  /virtenv
   source /virtenv/bin/activate
-  pip install pyzmq PyYAML pycrypto msgpack-python jinja2 psutil
+  pip install pyzmq PyYAML pycrypto msgpack-python jinja2 psutil futures tornado
 
-  pip install -e /vagrant/salt-src/
-  mkdir -p /virtenv/etc/salt/
-  echo "${VM_NAME}" > /virtenv/etc/salt/minion_id
-  cp /vagrant/templates/static_config/minion.template /virtenv/etc/salt/minion
-  sed -i "s/{vmid}/${VM_NAME}/g" "/virtenv/etc/salt/minion"
-  sed -i "s+etc+virtenv/etc+g" "/virtenv/etc/salt/minion"
+  GENERATE_SALT_SYSPATHS=1 pip install --global-option='--salt-root-dir=/virtenv/' -e /vagrant/salt-src
 fi
+
+mkdir -p "${ETC_PATH}/salt/minion.d"
+if [ -e "${ETC_PATH}/salt/minion" ]
+then
+  mv "${ETC_PATH}/salt/minion" "${ETC_PATH}/salt/minion.orig"
+fi
+echo "${VM_NAME}" > "${ETC_PATH}/salt/minion_id"
+cp /vagrant/templates/static_config/minion.template "${ETC_PATH}/salt/minion"
+sed -i "s/{vmid}/${VM_NAME}/g" "${ETC_PATH}/salt/minion"
 
 sed -i "s/master:.*/master: ${MASTER_IP}/g" "/vagrant/config/${VM_NAME}/minion.d/masters.conf" 
 
@@ -53,16 +57,20 @@ then
   mkdir -p "/vagrant/config/${VM_NAME}"
 fi
 
+# In case it's necessary to reboot minion outside of vagrant
+sudo cp /vagrant/templates/static_config/rc.local.template /etc/rc.local
+
+MINION_START_COMMAND="service salt-minion start"
+START_COMMANDS=""
 if [ "${SALT_DEVELOPMENT}" == "false" ]
 then
   service salt-minion restart
+  START_COMMANDS="${START_COMMANDS}\n${MINION_START_COMMAND}"
+  echo manual >> /etc/init/salt-minion.override
 else
-  salt-minion -c /virtenv/etc/salt -d
+  salt-minion -d
+  MINION_START_COMMAND="salt-minion -d"
+  START_COMMANDS="${START_COMMANDS}\nsource /virtenv/bin/activate\n\n${MINION_START_COMMAND}"
 fi
 
-if [ "${SALT_DEVELOPMENT}" == "false" ]
-then
-  # In case it's necessary to reboot minion outside of vagrant
-  sudo cp /vagrant/templates/static_config/rc.local.minion.template /etc/rc.local
-  echo manual >> /etc/init/salt-minion.override
-fi
+sed -i "s+# CONFIGURATION BLOCK+${START_COMMANDS}+g" /etc/rc.local
