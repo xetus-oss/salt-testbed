@@ -1,0 +1,50 @@
+vms:
+  primarymaster:
+    salt_master: true
+    auto_start: true
+
+  secondarymaster:
+    salt_master: true
+
+  minion1:
+    auto_start: true
+
+  minion2:
+
+vm_defaults:
+  #
+  # The vagrant box to use for the installation
+  #
+  box: ubuntu/bionic64
+  #
+  # Specify the post_install script
+  #
+  post_install_script: host-scripts/host_data_init.sh
+  #
+  # The number of CPUs to assign to the VM
+  #
+  cpus: 2
+  #
+  # The memory amount for the VM
+  #
+  memory: 2048
+  #
+  # Should the VM be set to start automatically with the up command
+  #
+  auto_start: false
+  #
+  # Wether or not this VM is a salt master
+  #
+  salt_master: false
+  #
+  # Only used if the salt_install_mode is deployment
+  #
+  salt_install_type: git
+  #
+  # Only used if of the salt_install_mode is deployment
+  #
+  salt_install_args: v2018.3.2
+  #
+  # Use VBoxManage list bridgedifs if you want ot use this
+  #
+  bridge_interface:

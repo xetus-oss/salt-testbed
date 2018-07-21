@@ -1,5 +1,0 @@
-# ========================================== MINION CONFIGURATION ==============================================
-master: 0.0.0.0
-
-# You can change this file, however you really should create other configuration files folder and they will be properly 
-# treated as salt minion configuration files.
