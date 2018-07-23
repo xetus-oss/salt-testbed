@@ -1,4 +1,6 @@
-A small and reasonably configurable vagrant-based testbed for saltstack + Ubuntu. 
+__A small and reasonably configurable vagrant-based testbed for saltstack + Ubuntu.__
+
+---
 
 * [Testbed Overview](#testbed-overview)
 * [Quick Start](#quick-start)
@@ -10,13 +12,15 @@ A small and reasonably configurable vagrant-based testbed for saltstack + Ubuntu
 	* [Saltstack Development](#saltstack-development)
 * [FAQ](#faq)
 
+---
+
 # Testbed Overview
 
 * Consists of 4 VMs, `primarymaster`, `secondarymaster`, `minion1`, and `minion2`. Only `primarymaster` and `minion1` are started by default.
-* Allows for yaml-based configuration of practical provisioning parameters on a per VM basis (salt version, cpus, memory amount, etc). See [testbed-defaults.yaml](testbed-defaults.yaml).
-* Connects all the VMs to a common private network with consistent static addresses for each VM.
+* Allows for yaml-based configuration of practical provisioning parameters on a per VM basis (salt version, cpus, memory amount, etc) through a local `testbed.yaml` file. See [testbed-defaults.yaml](testbed-defaults.yaml) for more information.
+* Connects all the VMs to a common private network with consistent static IP addresses for each VM.
 * Includes provisioning scripts that externalize the salt configuration (`/etc/salt/`) to `host-data/{system_name}/salt-etc`. 
-* Provides tools to make it easy to run development versions of salt (useful for salt hacking).
+* Provides scripts to make it easy to run saltstack from locally built source code (useful for salt hacking).
 
 # Quick Start
 
@@ -50,9 +54,9 @@ sudo salt '*' test.ping
 
 # Configuration
 
-The [testbed-defaults.yaml](testbed-defaults.yaml) describes the various configuration parameters, including the VM resources and the saltstack version to install. There the values below the `vm_defaults` key applied to each entry under the `vms` key, if not specified.
+The [testbed-defaults.yaml](testbed-defaults.yaml) describes the various configuration parameters, including the VM resources and the saltstack version to install. The values below the `vm_defaults` key are applied to each entry under the `vms` key, unless specified.
 
-These values can be overwritten by creating a `testbed.yaml` file in the root directory and defining alternate values.
+The default values can be overwritten by creating a `testbed.yaml` file in the root directory and defining alternate values.
 
 # About
 
@@ -67,8 +71,7 @@ These values can be overwritten by creating a `testbed.yaml` file in the root di
 
 ### Externalized Salt Configuration
 
-The data associated with each host is persisted outside of the individual VMs to make testing easier. However, this also means that you have to remember to update configuraton data between tests, even if you destory the VMs.
-
+The data associated with each host is persisted outside of the individual VMs to make testing easier. However, this also means that you have to remember to update configuraton data between test scenarios, even if you destory the VMs.
 
 ### Scenario Testing Hints
 
@@ -81,15 +84,15 @@ The recommended usage for this testbed is to run specific scenario tests that ca
 	host-scripts/
 	salt/ (** Clone formulas, modules, etc, under this directory)
 	srcs/ (** Clone source code, typically salt, under this directory)
-	salt-testbed-scenarios/ (** maintain test scenarios, under version control, in this directory) 
+	testbed-scenarios/ (** maintain test scenarios, under version control, in this directory) 
 ```
 
 
 ### Saltstack Development
 
-Whenever we do major upgrades of saltstack, we find we that need to contribute fixes or enhancements before we can move to the next version. This can be very time consuming and we have a series of scripts to make it less painful when running on Ubuntu.
+Whenever we do major upgrades of saltstack, we find we that need to contribute fixes or enhancements before we can move to the next version. This can be very time consuming and we have a series of scripts to make it less painful to run a development version of saltstack.
 
-The easiest way to get a development version of salt up and running in the testbed is to use the `host-scripts/ubuntu_development_setup.bash` script. As the name suggests, it's only intended to work on Ubuntu. 
+The easiest way to get a development version of saltstack up and running in the testbed is to use the `host-scripts/ubuntu_development_setup.bash` script. As the name suggests, it's only intended to work on Ubuntu. 
 
 From within a VM, call the script with a salt source directory and it will handle setting up a virtual environment with that development version installed for you. For example:
 
@@ -97,7 +100,7 @@ From within a VM, call the script with a salt source directory and it will handl
 /vagant/host-scripts/ubuntu_development_setup.bash /vagrant/srcs/salt/
 ```
 
- After that, you can manage starting and stopping the development version of salt using the handy ``host-scripts/salt_dev_ctl.bash` script.
+ After that, you can manage starting and stopping the development version of salt using the handy `host-scripts/salt_dev_ctl.bash` script.
 
 
 # FAQ
