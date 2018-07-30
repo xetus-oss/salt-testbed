@@ -1,4 +1,4 @@
-__A small and reasonably configurable vagrant-based testbed for saltstack + Ubuntu.__
+__A small, reasonably configurable, vagrant-based testbed for saltstack + Ubuntu.__
 
 ---
 
