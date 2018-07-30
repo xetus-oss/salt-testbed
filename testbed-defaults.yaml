@@ -45,6 +45,6 @@ vm_defaults:
   #
   salt_install_args: v2018.3.2
   #
-  # Use VBoxManage list bridgedifs if you want ot use this
+  # (Optional) Use `VBoxManage list bridgedifs` to find your availabile interfaces.
   #
   bridge_interface:
