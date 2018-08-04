@@ -19,7 +19,7 @@ __A small, reasonably configurable, vagrant-based testbed for saltstack + Ubuntu
 * Consists of 4 VMs, `primarymaster`, `secondarymaster`, `minion1`, and `minion2`. Only `primarymaster` and `minion1` are started by default.
 * Allows for yaml-based configuration of practical provisioning parameters on a per VM basis (salt version, cpus, memory amount, etc) through a local `testbed.yaml` file. See [testbed-defaults.yaml](testbed-defaults.yaml) for more information.
 * Connects all the VMs to a common private network with consistent static IP addresses for each VM.
-* Includes provisioning scripts that externalize the salt configuration (`/etc/salt/`) to `host-data/{system_name}/salt-etc`. 
+* Includes provisioning scripts that externalize the salt configuration (`/etc/salt/`) to `host-data/{system_name}/etc-salt`. 
 * Provides scripts to make it easy to run saltstack from locally built source code (useful for salt hacking).
 
 # Quick Start
@@ -28,27 +28,29 @@ To quickly get a master and mininon speaking with each other
 
 (1) Create the default machines
 
-```
+```bash
 vagrant up
 ```
 
-(2) Replace the `salt-etc/minion` file in the `host-data` folder for each host with the following line 
+(2) Replace the `etc-salt/minion` file in the `host-data` folder for each host with the following line 
 
-```
+```yaml
 master: 192.168.50.21
 ```
 
 (3) On each system, issue the following command
 
-```
+```bash
 vagrant ssh {system_name}
 sudo systemctl salt-minion restart
 ```
 
 (4) Prove that all systems are connected
 
-```
+```bash
 vagrant ssh primarymaster
+# note: you may or may not need to accept all keys
+sudo salt-key -A
 sudo salt '*' test.ping
 ```
 

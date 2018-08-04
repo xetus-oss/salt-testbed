@@ -32,7 +32,7 @@ if [ $IS_MASTER == "true" ]
 then
   if $NEW_HOST
   then
-    mkdir -p ${HOST_DATA_ROOT}/${MACHINE_NAME}/salt-srv
+    mkdir -p ${HOST_DATA_ROOT}/${MACHINE_NAME}/srv-salt
   fi
 
   rm -rf /srv/salt
