@@ -42,7 +42,7 @@ master: 192.168.50.21
 
 ```bash
 vagrant ssh {system_name}
-sudo systemctl salt-minion restart
+sudo systemctl restart salt-minion
 ```
 
 (4) Prove that all systems are connected
