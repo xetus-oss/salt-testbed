@@ -34,17 +34,24 @@ test_case_1_config = YAML.load(%{
 vms:
   primarymaster:
     auto_start: true
+    ubuntu_config:
+      salt_master: true
 
 vm_defaults:
-  box: ubuntu/bionic64
+  ubuntu_config:
+    box: ubuntu/bionic64
 })
 
-expected_vms = {
-  "primarymaster" => {
+expected_vms = [{
+  "name" => "primarymaster",
+  "vm_config" => {
     "auto_start" => true,
-    "box" => "ubuntu/bionic64"
+    "ubuntu_config" => {
+      "box" => "ubuntu/bionic64",
+      "salt_master" => true
+    }
   }
-}
+}]
 
 # ---------- Test Case 2
 print "Testing correct output post merge without overrides..."
@@ -63,16 +70,20 @@ $stdout.flush
 
 user_override_config =  {"vms" =>
   { "primarymaster" => {
-    "box" => "something/else"}
+    "ubuntu_config" => { "box" => "something/else" } }
   }
 }
 
-expected_vms = {
-  "primarymaster" => {
+expected_vms = [{
+  "name" => "primarymaster",
+  "vm_config" => {
     "auto_start" => true,
-    "box" => "something/else"
+    "ubuntu_config" => {
+      "box" => "something/else",
+      "salt_master" => true
+    }
   }
-}
+}]
 
 # ---------- Test Case 3
 print "Testing correct output post merge with vms overrides..."
@@ -89,13 +100,17 @@ $stdout.flush
 
 
 
-user_override_config =  { "vm_defaults" => { "box" => "something/else" } }
-expected_vms = {
-  "primarymaster" => {
+user_override_config =  { "vm_defaults" => { "ubuntu_config" => { "box" => "something/else" } } } 
+expected_vms = [{
+  "name" => "primarymaster",
+  "vm_config" => {
     "auto_start" => true,
-    "box" => "something/else"
+    "ubuntu_config" => {
+      "box" => "something/else",
+      "salt_master" => true
+    }
   }
-}
+}]
 # ---------- Test Case 4
 print "Testing correct output post merge with vm_defaults overrides..."
 $stdout.flush

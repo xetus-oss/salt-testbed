@@ -53,8 +53,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   factory = VMDefFactory.new(config)
 
   testBedConfig.vms().each do |vmspec|
-    factory.create_vm(name: vmspec["name"],
-      vm_config: vmspec["vm_config"])
+    factory.create_vm(
+      ip_tracker: testBedConfig.ip_tracker(),
+      name: vmspec["name"],
+      vm_config: vmspec["vm_config"]
+    )
   end
 
 end

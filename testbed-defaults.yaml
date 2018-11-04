@@ -1,25 +1,22 @@
 vms:
   primarymaster:
-    salt_master: true
+    ubuntu_config:
+      salt_master: true
     auto_start: true
 
   secondarymaster:
-    salt_master: true
+    ubuntu_config:
+      salt_master: true
 
   minion1:
     auto_start: true
 
   minion2:
 
+  winminion:
+    windows: true
+
 vm_defaults:
-  #
-  # The vagrant box to use for the installation
-  #
-  box: ubuntu/bionic64
-  #
-  # Specify the post_install script
-  #
-  post_install_script: host-scripts/host_data_init.sh
   #
   # The number of CPUs to assign to the VM
   #
@@ -33,18 +30,52 @@ vm_defaults:
   #
   auto_start: false
   #
-  # Wether or not this VM is a salt master
-  #
-  salt_master: false
-  #
-  # Only used if the salt_install_mode is deployment
-  #
-  salt_install_type: git
-  #
-  # Only used if of the salt_install_mode is deployment
-  #
-  salt_install_args: v2018.3.2
-  #
   # (Optional) Use `VBoxManage list bridgedifs` to find your availabile interfaces.
   #
   bridge_interface:
+  #
+  # The version of salt to install
+  #
+  version: 2018.3.2
+  #
+  # Whether the minion should be created as a Windows box
+  #
+  windows: false
+  #
+  # Ubuntu-only configurations
+  #
+  ubuntu_config:
+    #
+    # The vagrant box to use for the Linux installation
+    #
+    box: ubuntu/bionic64
+    #
+    # Specify the post_install script for Linux
+    #
+    post_install_script: host-scripts/host_data_init.sh
+    #
+    # Wether or not this VM is a salt master
+    #
+    salt_master: false
+    #
+    # the way vagrant's salt provisioner should install salt
+    #
+    salt_install_type: git
+    #
+    # Additional salt args to use when installing
+    #
+    salt_install_args: 
+  #
+  # Windows-only configurations
+  #
+  windows_config:
+    #
+    # The vagrant box to use for Windows installation
+    #
+    # Note: the Adminstrator and Vagrant account passwords are both: "vagrant"
+    #
+    box: mwrock/Windows2012R2
+    #
+    # Specify the post_install script for Windows
+    #
+    post_install_script: host-scripts/host_data_init.ps1

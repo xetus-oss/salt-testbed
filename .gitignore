@@ -9,6 +9,7 @@
 !_vagrantsupport/*
 !_vagrantsupport
 !README.md
+!CHANGELOG.md
 !testbed-defaults.yaml
 !Vagrantfile
 

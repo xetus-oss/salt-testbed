@@ -1,4 +1,4 @@
-__A small, reasonably configurable, vagrant-based testbed for saltstack + Ubuntu.__
+__A small, reasonably configurable, vagrant-based testbed for saltstack + Ubuntu/Windows.__
 
 ---
 
@@ -10,17 +10,25 @@ __A small, reasonably configurable, vagrant-based testbed for saltstack + Ubuntu
 	* [Externalized Salt Configuration](#externalized-salt-configuration)
 	* [Scenario Testing Hints](#scenario-testing-hints)
 	* [Saltstack Development](#saltstack-development)
+* [Testbed Development](#testbed-development)
 * [FAQ](#faq)
+* [Changelog](CHANGELOG.md)
 
 ---
 
 # Testbed Overview
 
-* Consists of 4 VMs, `primarymaster`, `secondarymaster`, `minion1`, and `minion2`. Only `primarymaster` and `minion1` are started by default.
+* Consists of 5 VMs, `primarymaster`, `secondarymaster`, `minion1`, `minion2`, and `winminion`. Only `primarymaster` and `minion1` are started by default.
 * Allows for yaml-based configuration of practical provisioning parameters on a per VM basis (salt version, cpus, memory amount, etc) through a local `testbed.yaml` file. See [testbed-defaults.yaml](testbed-defaults.yaml) for more information.
 * Connects all the VMs to a common private network with consistent static IP addresses for each VM.
 * Includes provisioning scripts that externalize the salt configuration (`/etc/salt/`) to `host-data/{system_name}/etc-salt`. 
 * Provides scripts to make it easy to run saltstack from locally built source code (useful for salt hacking).
+
+## Windows Minion Caveats
+
+* Windows VMs can only be configured with a stable version of Salt; see the [Vagrant Salt Provisioner](https://www.vagrantup.com/docs/provisioning/salt.html) documentation for more details.
+ * Windows VMs can not be configured as masters; see the [Vagrant Salt Provisioner](https://www.vagrantup.com/docs/provisioning/salt.html) documentation for more details.
+ * Windows VMs are **big** compared to Ubuntu VMs. Plan on grabbing a couple of coffees while the VM downloads, and expect to use a couple of gigs of memory for the running VM. 
 
 # Quick Start
 
@@ -40,9 +48,21 @@ master: 192.168.50.21
 
 (3) On each system, issue the following command
 
+**Ubuntu Minion**
+
 ```bash
 vagrant ssh {system_name}
 sudo systemctl restart salt-minion
+```
+
+**Windows Minion**
+
+1. Open a GUI into the Windows minion (e.g. via VirtualBox)
+2. Open a PowerShell prompt (as adminstrator)
+3. Run the folloowing:
+
+```powershell
+Restart-Service salt-minion
 ```
 
 (4) Prove that all systems are connected
@@ -70,6 +90,7 @@ The default values can be overwritten by creating a `testbed.yaml` file in the r
 | secondarymaster | 192.168.50.22 |
 | minion1         | 192.168.50.23 |
 | minion2         | 192.168.50.24 |
+| winminion       | 192.168.50.25 |
 
 ### Externalized Salt Configuration
 
@@ -104,6 +125,22 @@ From within a VM, call the script with a salt source directory and it will handl
 
  After that, you can manage starting and stopping the development version of salt using the handy `host-scripts/salt_dev_ctl.bash` script.
 
+ **note: not available for the Windows minion**
+
+# Testbed Development
+
+When making changes to the testbed please:
+
+* add comments to the changelog when contributing your Pull Request, especially if making breaking changes
+* run and update the ConfigLoaderTest to ensure you haven't made any unexpected changes.
+
+### Running the Testbed Tests
+
+To run the tests:
+
+```bash
+ruby _vagrantsupport/ConfigLoaderTest.rb 
+```
 
 # FAQ
 
@@ -113,4 +150,5 @@ Kitchen-salt is great! But there are lots of situations where a small configurab
 
 1. Developing against the saltstack source.
 2. Testing of complex scenarios, especially when more than 1 host is involved, like failover in a multi-master environment or orchestration scripts.
-3. Preparing infrastructure changes to your version of salt and/or linux distrobution.
+3. Preparing infrastructure changes to your version of salt and/or Ubuntu distrobution.
+
