@@ -107,8 +107,8 @@ Once you've pushed your changes, it's a good idea to destroy your local test bed
 #### Steps
 
 1. update your `priamrymaster`'s configuration to:
-  1. add your winrepo git repository's url to the `winrepo_remotes_ng` list; and
-  2. comment out the `winrepo_dir_ng` configuration to keep from overwriting your local winrepo clone;
+    1. add your winrepo git repository's url to the `winrepo_remotes_ng` list; and
+    2. comment out the `winrepo_dir_ng` configuration to keep from overwriting your local winrepo clone;
 2. restart the salt-master: `systemctl restart salt-master`;
 3. have Salt clone your git repo: `salt-run winrepo.update_git_repos`
 4. update the winminion's pkg db: `salt winminion pkg.refresh_db`
