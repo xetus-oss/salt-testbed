@@ -10,6 +10,8 @@ __A small, reasonably configurable, vagrant-based testbed for saltstack + Ubuntu
 	* [Externalized Salt Configuration](#externalized-salt-configuration)
 	* [Scenario Testing Hints](#scenario-testing-hints)
 	* [Saltstack Development](#saltstack-development)
+* Docs
+	* [WinRepo Development](docs/using_winrepo.md)
 * [Testbed Development](#testbed-development)
 * [FAQ](#faq)
 * [Changelog](CHANGELOG.md)
