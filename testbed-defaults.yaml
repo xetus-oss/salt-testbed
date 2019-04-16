@@ -36,7 +36,7 @@ vm_defaults:
   #
   # The version of salt to install
   #
-  version: 2018.3.2
+  version: v2018.3.2
   #
   # Whether the minion should be created as a Windows box
   #

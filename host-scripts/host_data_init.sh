@@ -4,6 +4,8 @@
 #
 # ROLE_TYPE
 
+source /vagrant/host-scripts/linux_helpers.sh
+
 HOST_DATA_ROOT=/vagrant/host-data
 NEW_HOST=""
 
@@ -41,7 +43,7 @@ fi
 
 if [ $IS_MASTER == "true" ]
 then
-  systemctl restart salt-master
+  restart_service salt-master
 fi
 
-systemctl restart salt-minion
+restart_service salt-minion

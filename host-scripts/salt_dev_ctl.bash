@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source /vagrant/host-scripts/linux_helpers.sh
+
 function usage(){
   echo "Usage: $0 ACTION"
   echo "Actions:"
@@ -19,32 +21,29 @@ function usage(){
 
 SALT_SYSTEMD_SERVICE_DIR=/lib/systemd/system/
 function has_salt_minion(){
-  [ -e ${SALT_SYSTEMD_SERVICE_DIR}/salt-minion.service ] && \
-    return 0 || return 1
+  service_exists salt-minion
 }
 
 function has_salt_master(){
-  [ -e ${SALT_SYSTEMD_SERVICE_DIR}/salt-master.service ] && \
-    return 0 || return 1
+  service_exists salt-master
 }
 
 function has_salt_api(){
-  [ -e ${SALT_SYSTEMD_SERVICE_DIR}/salt-api.service ] && \
-    return 0 || return 1
+  service_exists salt-api
 }
 
 function system_salt_master_running(){
-  systemctl -q is-active salt-master > /dev/null
+  service_running salt-master > /dev/null
   return $?
 }
 
 function system_salt_api_running(){
-  systemctl -q is-active salt-api  > /dev/null
+  service_running salt-api  > /dev/null
   return $?
 }
 
 function system_salt_minion_running(){
-  systemctl -q is-active salt-minion  > /dev/null
+  service_running salt-minion  > /dev/null
   return $?
 }
 
@@ -63,59 +62,52 @@ function dev_salt_minion_running(){
   return $?
 }
 
-function test_fn(){
-  has_salt_minion
-  echo $?
-  has_salt_master && has_salt_minion \
-    && echo "Nested and YES!" || echo "Nested and NO!"
-}
-
 function start_system_salt_services(){
   if has_salt_master
   then
     system_salt_master_running && echo "system salt-master already running" \
-      || echo "starting system salt-master" && systemctl start salt-master
+      || (echo "starting system salt-master" && start_service salt-master)
   fi
 
   if has_salt_api
   then
     system_salt_api_running && echo "system salt-api already running" \
-      || echo "starting system salt-api" && systemctl start salt-api
+      || (echo "starting system salt-api" && start_service salt-api)
   fi
 
   if has_salt_minion
   then
      system_salt_minion_running && echo "system salt-minion already running" \
-      || echo "starting  system salt-minion" && systemctl start salt-minion
+      || (echo "starting system salt-minion" && start_service salt-minion)
   fi
 }
 
 function stop_system_salt_services(){
   has_salt_minion && system_salt_minion_running && \
-    echo "stopping system salt-minion" && systemctl stop salt-minion 
+    echo "stopping system salt-minion" && stop_service salt-minion 
   has_salt_api && system_salt_api_running &&\
-    echo "stopping system salt-api" && systemctl stop salt-api
+    echo "stopping system salt-api" && stop_service salt-api
   has_salt_master && system_salt_master_running &&\
-    echo "stopping system salt-master" && systemctl stop salt-master
+    echo "stopping system salt-master" && stop_service salt-master
 }
 
 function start_dev_salt_services(){
   if has_salt_master
   then
     dev_salt_master_running && echo "dev salt-master already running" \
-      || echo "starting dev salt-master" && salt-master -d
+      || (echo "starting dev salt-master" && salt-master -d)
   fi
 
   if has_salt_api
   then
     dev_salt_api_running && echo "dev salt-api already running" \
-      || echo "starting dev salt-api" && salt-api -d
+      || (echo "starting dev salt-api" && salt-api -d)
   fi
 
   if has_salt_minion
   then
     dev_salt_minion_running && echo "dev salt-minion already running" \
-      || echo "starting dev salt-minion" && salt-minion -d
+      || (echo "starting dev salt-minion" && salt-minion -d)
   fi
 }
 

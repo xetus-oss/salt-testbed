@@ -35,7 +35,7 @@ class UbuntuVMDefFactory
       vbox.vm.provision "install_salt", type: "salt" do |s|
         s.install_master = vm_config['ubuntu_config']['salt_master']
         s.install_type = vm_config['ubuntu_config']['salt_install_type']
-        s.install_args = ["v#{vm_config['version']}", vm_config['ubuntu_config']['salt_install_args']].flatten.compact.join(" ")
+        s.install_args = ["#{vm_config['version']}", vm_config['ubuntu_config']['salt_install_args']].flatten.compact.join(" ")
         s.minion_id = hostname_value
         if !vm_config['ubuntu_config']['salt_master']
           s.master_id = (ip_tracker.get_ip'primarymaster')
