@@ -41,11 +41,16 @@ class UbuntuVMDefFactory
           s.master_id = (ip_tracker.get_ip'primarymaster')
         end
 
+        s.bootstrap_options = ""
+        if vm_config['ubuntu_config']['salt_bootstrap_options']
+          s.bootstrap_options += " " + vm_config['ubuntu_config']['salt_bootstrap_options']
+        end
+
         #
         # If you install the salt master, you get the salt-cloud with it
         #
         if vm_config['ubuntu_config']['salt_master']
-          s.bootstrap_options = "-L"
+          s.bootstrap_options += " -L"
         end
       end
 

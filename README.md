@@ -112,6 +112,28 @@ The recommended usage for this testbed is to run specific scenario tests that ca
 	testbed-scenarios/ (** maintain test scenarios, under version control, in this directory) 
 ```
 
+### Using a Different Version of Salt
+
+By default the testbed installs Salt v2018.3.2 on all VMs. You can switch to a different release version by setting the  `vm_defaults:version` value in your `testbed.yaml` override file.
+
+##### Using a Remote Fork of Salt
+
+You can use a remote fork of Salt with the following settings in your `testbed.yaml` override file (obivously replacing the github.com URL with the ):
+
+1. `vm_defaults:version: {{ git branch }}`
+1. `vm_defaults:ubuntu_config:salt_install_type: git`
+2. `vm_defaults:ubuntu_config:salt_bootstrap_options: "-g {{ git repository URL }}"`
+
+For example:
+
+```yaml
+vm_defaults:
+  version: v2015.8.7-xetus-patches
+  ubuntu_config:
+    salt_install_type: git
+    salt_bootstrap_options: "-g https://github.com/xetus-oss/salt.git"
+```
+
 
 ### Saltstack Development
 
